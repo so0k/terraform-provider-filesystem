@@ -15,7 +15,7 @@ GOTAGS ?=
 GOMAXPROCS ?= 4
 
 # Get the project metadata
-GOVERSION := 1.10.1
+GOVERSION := 1.11
 PROJECT := $(CURRENT_DIR:$(GOPATH)/src/%=%)
 OWNER := $(notdir $(patsubst %/,%,$(dir $(PROJECT))))
 NAME := $(notdir $(PROJECT))
@@ -28,8 +28,10 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
 # Default os-arch combination to build
-XC_OS ?= darwin freebsd linux openbsd solaris windows
-XC_ARCH ?= 386 amd64 arm
+# XC_OS ?= darwin freebsd linux openbsd solaris windows
+#XC_ARCH ?= 386 amd64 arm
+XC_OS ?= darwin linux windows
+XC_ARCH ?= amd64
 XC_EXCLUDE ?= darwin/386 darwin/arm solaris/386 solaris/arm windows/arm
 
 # GPG Signing key (blank by default, means no GPG signing)
@@ -59,9 +61,9 @@ define make-xc-target
 			--interactive \
 			--rm \
 			--dns="8.8.8.8" \
-			--volume="${CURRENT_DIR}:/go/src/${PROJECT}" \
-			--workdir="/go/src/${PROJECT}" \
-			"golang:${GOVERSION}" \
+			--volume="${CURRENT_DIR}:/src/${PROJECT}" \
+			--workdir="/src/${PROJECT}" \
+			"builder:latest" \
 			env \
 				CGO_ENABLED="0" \
 				GOOS="${1}" \
@@ -94,16 +96,17 @@ dev:
 
 # dist builds the binaries and then signs and packages them for distribution
 dist:
-ifndef GPG_KEY
-	@echo "==> ERROR: No GPG key specified! Without a GPG key, this release cannot"
-	@echo "           be signed. Set the environment variable GPG_KEY to the ID of"
-	@echo "           the GPG key to continue."
-	@exit 127
-else
+# ifndef GPG_KEY
+# 	@echo "==> ERROR: No GPG key specified! Without a GPG key, this release cannot"
+# 	@echo "           be signed. Set the environment variable GPG_KEY to the ID of"
+# 	@echo "           the GPG key to continue."
+# 	@exit 127
+# else
 	@$(MAKE) -f "${MKFILE_PATH}" _cleanup
 	@$(MAKE) -f "${MKFILE_PATH}" -j4 build
-	@$(MAKE) -f "${MKFILE_PATH}" _compress _checksum _sign
-endif
+	@$(MAKE) -f "${MKFILE_PATH}" _compress _checksum
+	# @$(MAKE) -f "${MKFILE_PATH}" _compress _checksum _sign
+#endif
 .PHONY: dist
 
 # test runs the tests
